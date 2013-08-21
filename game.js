@@ -42,6 +42,10 @@ var array_escaleras;
 var key_state;
 var player;
 
+var saltos;
+var MAX_SALTOS = 6;
+var space_pressed;
+
 //
 
 function estaEnLaEscalera()
@@ -97,13 +101,24 @@ var PlayerSprite = function(x,y)
 	this.y = y;
 	this.width = tile_size / 2;
 	this.height = tile_size;
+	this.direction = 1;
 
 	this.draw = function()
 	{
+		context.save();
+
+		context.translate(this.x, this.y);
+		context.translate(this.width * 0.5, this.height * 0.5);
+		context.rotate( ( Math.PI / 180 ) * (this.direction * 3) );
+
 		context.fillStyle = "#FF0000";
-		context.fillRect(this.x - this.width * 0.5, this.y - this.height * 0.5, this.width, this.height);
+		context.fillRect(-this.width, -this.height, this.width, this.height);
 		context.strokeStyle = "#000000";
-		context.strokeRect(this.x - this.width * 0.5, this.y - this.height * 0.5, this.width, this.height);
+		context.strokeRect(-this.width, -this.height, this.width, this.height);
+
+		// context.drawImage( image, -width * 0.5, -height * 0.5 );
+
+		context.restore();
 	};	
 
 };
@@ -120,6 +135,8 @@ function thread()
 function init()
 {
 
+	space_pressed = false;
+	saltos = 0;
 	player = new PlayerSprite(tile_size * 3,  tile_size * 3);
 
 	key_state = { UP: false, DOWN: false, LEFT: false, RIGHT: false, SPACE: false };
@@ -195,6 +212,8 @@ function draw()
 {
 	var col, row;
 
+	context.clearRect(0, 0, WIDTH, HEIGHT);
+
 	context.fillStyle = "#CCCCCC";
 	context.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -227,6 +246,7 @@ function draw()
 
 	context.restore();
 
+
 }
 
 function update()
@@ -239,6 +259,8 @@ function update()
 	{
 		climbing = false;
 	}
+
+	player.direction = 0;
 
 	if(key_state.UP)
 	{
@@ -273,6 +295,7 @@ function update()
         else {
             if (walking_while_jumping || can_jump) {
                 xspeed = -walk_speed;
+                player.direction = -1;
             }
         }
 
@@ -291,15 +314,19 @@ function update()
         else {
             if (walking_while_jumping || can_jump) {
                 xspeed = walk_speed;
+                player.direction = 1;
             }
         }		
 	}
 
-	if(key_state.SPACE && can_jump && !jumping && !climbing)
+	if(!space_pressed && key_state.SPACE && saltos < MAX_SALTOS && can_jump /*&& !jumping*/ && !climbing)
 	{
+		saltos++;
 		yspeed -= jump_power;
+		jump_power *= 0.5;
 		// can_jump = false;
 		jumping = true;
+		space_pressed = true;
 	}
 
 	//
@@ -337,6 +364,8 @@ function update()
         xspeed = 0;
         yspeed = 0;
         jumping = false;
+        saltos = 0;
+        jump_power = tile_size * 0.45;
 	}
 
 	// left control
@@ -367,6 +396,9 @@ function update()
         xspeed = 0;
     }
     */
+
+    if(yspeed > 0 && !jumping)
+    	jumping = true;
 
     player.x = forecast_x;
     player.y = forecast_y;
@@ -431,6 +463,7 @@ jQuery(document).keyup(function(e)
 	else if(key == 32) // Espacio
 	{
 		key_state.SPACE = false;
+		space_pressed = false;
 	}
 });
 
